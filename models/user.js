@@ -1,30 +1,32 @@
+const mongoose=require("mongoose")
+const bcrypt = require('bcrypt');
 
-const mongoose = require('mongoose');
-
-// Definir el esquema del usuario
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true, // Los espacios en blanco antes o despues son eliminados
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    match: [/.+\@.+\..+/, 'Por favor ingrese un correo válido']
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+    name:{
+        type:String,
+        required:false,
+        trim:true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    password: {
+        type: String,
+        required: true
+    }
 });
+userSchema.pre('save', async function(next) {
+    if (this.isModified('password') || this.isNew) {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
+    }
+    next();
+  });
+  
+  userSchema.methods.comparePassword = function(candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
+  };
 
-// Crear y exportar el modelo
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;
+module.exports = mongoose.model('User', userSchema);
